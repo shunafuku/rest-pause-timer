@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./bulma-1.0.1/bulma/css/bulma.css">
+
+    <title>カウントダウンタイマー</title>
+</head>
+<body>
+    <header class="header navbar" style="border-bottom: 2px solid white;">
+        <div class="navbar-brand">
+            <span class="navbar-item">
+                レストポーズ用タイマー
+            </span>
+        </div>
+    </header>
+    <section class="hero">
+        <div class="hero-body content has-text-centered">
+            <div id="timer" class="title"></div>
+            <p id="status" class="subtitle">クリックしてタイマーを開始</p>
+            <button id="startButton" class="button is-primary">
+                スタート
+            </button>
+        </div>
+    </section>
+    <footer class="footer navbar is-fixed-bottom">
+        このサイトは、CSSに<a href="https://bulma.io/">bulma</a>, 効果音に<a href="https://soundeffect-lab.info/">効果音ラボ</a>のものを利用しています。
+    </footer>
+    <!-- オーディオ要素を追加 -->
+    <audio id="beep1" src="beep1.mp3" preload="auto"></audio>
+    <audio id="beep2" src="beep2.mp3" preload="auto"></audio>
+    <script>
+        const workDuration = 15; // 作業時間を15秒に設定
+        const restDuration = 20; // 休憩時間を20秒に設定
+        const sets = [5, 4, 3, 2]; // 各ラウンドのセット数
+        const beepInterval = Math.floor(workDuration / 3); // workDurationを3で割った数
+
+        function startTimer(sets, currentRound = 0) {
+            if (currentRound >= sets.length) {
+                document.getElementById('status').textContent = "タイマー終了";
+                playBeep('beep1');
+                return;
+            }
+            
+            let setCount = sets[currentRound];
+            
+            function startSet(setIndex = setCount) {
+                if (setIndex <= 0) {
+                    document.getElementById('status').textContent = `ラウンド ${currentRound + 1}: 休憩中`;
+                    countdown(restDuration, () => {
+                        playBeep('beep2'); // 休憩終了時にビープ音を鳴らす
+                        startTimer(sets, currentRound + 1);
+                    }, false); // 休憩中はビープ音を鳴らさない
+                } else {
+                    document.getElementById('status').textContent = `ラウンド ${currentRound + 1}: 残りセット ${setIndex}`;
+                    countdown(workDuration, () => {
+                        playBeep('beep2'); // セット終了時にビープ音を鳴らす
+                        startSet(setIndex - 1);
+                    }, true); // 作業中はビープ音を鳴らす
+                }
+            }
+            
+            startSet();
+        }
+
+        function countdown(duration, callback, shouldBeep) {
+            let remaining = duration;
+            const timerElement = document.getElementById('timer');
+            timerElement.textContent = remaining;
+
+            const intervalId = setInterval(() => {
+                remaining--;
+                timerElement.textContent = remaining;
+
+                // Beep every beepInterval seconds if shouldBeep is true
+                if (shouldBeep && remaining > 0 && remaining % beepInterval === 0) {
+                    playBeep('beep1');
+                }
+
+                if (remaining <= 0) {
+                    clearInterval(intervalId);
+                    callback();
+                }
+            }, 1000);
+        }
+
+        function playBeep(beepId) {
+            const beep = document.getElementById(beepId);
+            beep.currentTime = 0; // 再生位置をリセット
+            beep.play().catch(error => {
+                console.log('Audio playback failed:', error);
+            });
+        }
+
+        // ユーザーのクリックイベントを待つ
+        document.body.addEventListener('click', () => {
+            document.getElementById('status').textContent = "3秒後にタイマー開始...";
+            setTimeout(() => {
+                playBeep('beep2'); // スタート時にビープ音を鳴らす
+                document.getElementById('status').textContent = "タイマー開始";
+                startTimer(sets);
+            }, 3000); // 3秒待つ
+        }, { once: true }); // 一度だけイベントをリッスン
+    </script>
+
+</body>
+</html>
